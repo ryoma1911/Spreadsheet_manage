@@ -1,0 +1,177 @@
+/*ライブラリ概要
+スプレッドシートを操作
+*/
+function SpreadsheetHandler(sheetID) {
+  return new ss_manage(sheetID);
+}
+
+class ss_manage {
+  constructor(sheetID) {
+    this.ss = SpreadsheetApp.openById(sheetID);
+  }
+
+//スプレッドシートを最新状態で保存
+  sheet_save() {
+    this.ss.flush();
+  }
+
+//指定した名称に該当するシートをアクティブにする
+  sheet_activate(sheetname) {
+    return this.ss.getSheetByName(sheetname).activate();
+  }
+
+/*以下の関数は指定した範囲のセル値を操作する
+指定形式:A1:B2
+*/
+//セル値をクリア
+  clear_cell(range) {
+    this.ss.getRange(range).clear();
+  }
+
+//セル値を取得
+  get_value(range) {
+    return this.ss.getRange(range).getValue();
+  }
+
+//セルに値を設定
+  set_value(range,value) {
+    this.ss.getRange(range).setValue(value);
+  }
+
+//セルの値を配列で取得
+  get_values_select(range) {
+    return this.ss.getRange(range).getValues();
+  }
+
+//配列を指定してセル範囲に設定
+  set_values(range,values) {
+   this.ss.getRange(range).setValues(values);
+  }
+
+//セルの最終行を取得する
+  get_lastrow(range) {
+    return this.ss.getRange(range).getNextDataCell(SpreadsheetApp.Direction.DOWN).getRow();
+  }
+
+//セルに色を設定する
+  set_color(range,color) {
+    this.ss.getRange(range).setBackground(color);
+  }
+
+//セルの水平方向のテキスト位置を設定する
+  set_HorizontalAlignment(range,alignment) {
+    this.ss.getRange(range).setHorizontalAlignment(alignment);
+  }
+
+//セルの垂直方向のテキスト位置を設定する
+  set_FontFamily(range,style) {
+    this.ss.getRange(range).setFontFamily(style);
+  }
+
+//セル値のフォントの太さを設定する
+  set_fontwight(range,style) {
+    this.ss.getRange(range).setFontWeight(style);
+  }
+
+//セル値のフォントサイズを設定する
+  set_fontsize(range,size) {
+    this.ss.getRange(range).setFontSize(size);
+  }
+
+//セルに罫線を設定する
+  set_border(top,left,bottom,right,vartical,horizontal,color,range,style) {
+    this.ss.getRange(range).setBorder(top,left,bottom,right,vartical,horizontal,color,style);
+  }
+
+//シート全体のセル値を配列で取得
+  get_values_all() {
+    return this.ss.getDataRange().getValues();
+  }
+
+//スプレッドシートを作成する
+  create_sheet(sheetname) {
+    var ss_create = SpreadsheetApp.create(sheetname);
+    return ss_create.getId();
+  }
+
+//シートが存在するか確認する（存在する場合はTrue,しない場合はFalseを返す）
+  exists_sheet(sheetname) {
+    const ss_exists = this.ss.getSheetByName(sheetname);
+    if(!ss_exists) {
+      return false;
+    }
+    else{
+      return true;
+    }
+  }
+
+//別のスプレッドシートにシートをコピーする
+  copy_separate_sheet(destination_sheetID,sheetname,destination_name) {
+    const destination_sheet = SpreadsheetApp.openById(destination_sheetID);
+    var copy_sheet = this.ss.getSheetByName(sheetname);
+        copy_sheet.copyTo(destination_sheet).setName(destination_name);
+  }
+
+//シートを同じスプレッドシートにコピーする
+  copy_sheet(sheetname,destination_name) {
+    var copy_sheet = this.ss.getSheetByName(sheetname);
+      copy_sheet.copyTo(copy_sheet).setName(destination_name);
+  }
+
+//シートを削除する
+  delete_sheet(sheetname) {
+    const del_sheet = this.ss.getSheetByName(sheetname);
+      this.ss.deleteSheet(del_sheet);
+  }
+
+//シートの順番を変更する
+  move_sheet(sheetname,number) {
+    this.ss.getSheetByName(sheetname).activate();
+    this.ss.moveActiveSheet(number);
+  }
+
+//スプレッドシート内のシート名を配列で取得する
+  get_sheets() {
+    return this.ss.getSheets();
+  }
+
+//スプレッドシートを.xlsx形式に変換しgoogleドライブに保存する
+  export_excel(sheetID) {
+    var new_file;
+    var url = "https://docs.google.com/spreadsheets/d/" + sheetID + "/export?format=xlsx";
+    var options = {
+      method: "get",
+      headers: {"Authorization": "Bearer " + ScriptApp.getOAuthToken()},
+      muteHttpExceptions: true
+    };
+
+    var res = UrlFetchApp.fetch(url, options);
+
+    if (res.getResponseCode() == 200) {
+      new_file = DriveApp.createFile(res.getBlob()).setName(this.ss.getName() + ".xlsx");
+    }
+  return new_file.getId();
+  }
+
+//指定したセル範囲のデータからピボットテーブルを作成する
+  create_pipottable(range) {
+    const data = this.ss.getDataRange();
+    return this.ss.getRange(range).createPivotTable(data);
+  }
+
+  set_table(pivot,filter,row,group,select) {
+    pivot.addRowGroup(group);
+    let count = pivot.addPivotValue(group,filter);
+    count.setDisplayName(row);
+    count.showAs(select);
+  }
+
+//作成したピボットテーブルに列を追加する
+  add_culumn(pivot,filter,field,group,select) {
+  let count = pivot.addPivotValue(group,filter);
+  count.setDisplayName(field);
+  count.showAs(select);
+}
+
+
+}
